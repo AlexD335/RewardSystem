@@ -12,8 +12,74 @@
             <h1>🏆 TechSoft - Sistema de Recompensas</h1>
             <p>Registra tus compras y administra tus puntos</p>
         </header>
-        <p style="text-align:center;padding:50px;font-size:18px;">🚧 Sistema en construcción</p>
+
+        <!-- Seleccionar Usuario -->
+        <section class="section">
+            <h2>👤 Seleccionar Usuario</h2>
+            <div class="user-select">
+                <select id="userSelect">
+                    <option value="">-- Selecciona un usuario --</option>
+                    <option value="1">John Doe (ID: 1)</option>
+                    <option value="2">Jane Smith (ID: 2)</option>
+                </select>
+                <button onclick="loadUserData()" class="btn btn-primary">Cargar Usuario</button>
+            </div>
+            <div id="userInfo" class="user-info hidden">
+                <p><strong>Usuario:</strong> <span id="userName"></span></p>
+                <p><strong>Puntos:</strong> <span id="userPoints">0</span></p>
+            </div>
+        </section>
+
+        <!-- Registrar Compra -->
+        <section class="section">
+            <h2>🛒 Registrar Compra</h2>
+            <div class="form-group">
+                <label for="purchaseAmount">Monto (en pesos):</label>
+                <input type="number" id="purchaseAmount" placeholder="Ingresa el monto" min="0" step="1000">
+                <small>Mínimo: 1,000 pesos (1 punto)</small>
+            </div>
+            <button onclick="registerPurchase()" class="btn btn-success">Registrar Compra</button>
+            <div id="purchaseResult" class="result hidden"></div>
+        </section>
+
+        <!-- Canjear Puntos -->
+        <section class="section">
+            <h2>🎯 Canjear Puntos</h2>
+            <div class="form-group">
+                <label for="redeemPoints">Puntos a canjear:</label>
+                <input type="number" id="redeemPoints" placeholder="Ingresa los puntos" min="0" step="1">
+                <small>1 punto = 100 pesos</small>
+            </div>
+            <button onclick="redeemPoints()" class="btn btn-warning">Canjear Puntos</button>
+            <div id="redeemResult" class="result hidden"></div>
+        </section>
+
+        <!-- Consultar Saldo -->
+        <section class="section">
+            <h2>💰 Consultar Saldo</h2>
+            <button onclick="checkBalance()" class="btn btn-info">Ver Saldo</button>
+            <div id="balanceResult" class="result hidden"></div>
+        </section>
+
+        <!-- Historial -->
+        <section class="section">
+            <h2>📜 Historial de Movimientos</h2>
+            <button onclick="viewHistory()" class="btn btn-secondary">Ver Historial</button>
+            <div id="historyResult" class="result hidden">
+                <div id="historyList"></div>
+            </div>
+        </section>
+
+        <!-- Todos los Usuarios -->
+        <section class="section">
+            <h2>👥 Todos los Usuarios</h2>
+            <button onclick="viewAllUsers()" class="btn btn-secondary">Ver Todos</button>
+            <div id="allUsersResult" class="result hidden">
+                <div id="allUsersList"></div>
+            </div>
+        </section>
     </div>
+
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>
