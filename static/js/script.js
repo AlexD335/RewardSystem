@@ -1,32 +1,86 @@
-// script.js - Complete JavaScript logic
+// script.js - Complete JavaScript logic with safe element handling
 let currentUserId = null;
+
+// Helper function to safely set text content
+function safeSetTextContent(elementId, text) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.textContent = text;
+        return true;
+    } else {
+        console.warn(`Element with id '${elementId}' not found`);
+        return false;
+    }
+}
+
+// Helper function to safely show result
+function showResult(elementId, message, type) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.textContent = message;
+        element.className = 'result show ' + type;
+        return true;
+    } else {
+        console.warn(`Result element with id '${elementId}' not found`);
+        return false;
+    }
+}
+
+// Helper function for fetch with error handling
+async function fetchWithErrorHandling(url, options = {}) {
+    try {
+        const response = await fetch(url, options);
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Request failed');
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Fetch error:', error);
+        throw error;
+    }
+}
 
 // Load user data when selected
 function loadUserData() {
     const userSelect = document.getElementById('userSelect');
+    if (!userSelect) {
+        console.error('User select element not found');
+        return;
+    }
+    
     currentUserId = userSelect.value;
     
     if (!currentUserId) {
         showResult('userInfo', 'Please select a user', 'info');
-        document.getElementById('userInfo').classList.add('hidden');
+        const userInfo = document.getElementById('userInfo');
+        if (userInfo) userInfo.classList.add('hidden');
         return;
     }
     
     // Fetch user balance
     fetch(`/api/get_balance/${currentUserId}`)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw err; });
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
-                document.getElementById('userName').textContent = data.user_name;
-                document.getElementById('userPoints').textContent = data.points;
-                document.getElementById('userInfo').classList.remove('hidden');
+                safeSetTextContent('userName', data.user_name);
+                safeSetTextContent('userPoints', data.points);
+                const userInfo = document.getElementById('userInfo');
+                if (userInfo) userInfo.classList.remove('hidden');
                 showResult('userInfo', `User ${data.user_name} loaded successfully`, 'success');
             } else {
                 showResult('userInfo', data.error || 'Error loading user', 'error');
             }
         })
         .catch(error => {
-            showResult('userInfo', 'Error connecting to server', 'error');
+            showResult('userInfo', 'Error loading user: ' + error.message, 'error');
         });
 }
 
@@ -38,6 +92,11 @@ function registerPurchase() {
     }
     
     const amountInput = document.getElementById('purchaseAmount');
+    if (!amountInput) {
+        console.error('Purchase amount input not found');
+        return;
+    }
+    
     const amount = parseFloat(amountInput.value);
     
     if (!amount || amount <= 0) {
@@ -58,7 +117,12 @@ function registerPurchase() {
             amount: amount
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => { throw err; });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             showResult('purchaseResult', 
@@ -66,14 +130,15 @@ function registerPurchase() {
                 'success'
             );
             // Update user points display
-            document.getElementById('userPoints').textContent = data.total_points;
-            amountInput.value = '';
+            safeSetTextContent('userPoints', data.total_points);
+            if (amountInput) amountInput.value = '';
         } else {
             showResult('purchaseResult', `❌ ${data.error}`, 'error');
         }
     })
     .catch(error => {
-        showResult('purchaseResult', 'Error connecting to server', 'error');
+        console.error('Purchase error:', error);
+        showResult('purchaseResult', '❌ Error: ' + (error.message || 'Error connecting to server'), 'error');
     });
 }
 
@@ -85,6 +150,11 @@ function redeemPoints() {
     }
     
     const pointsInput = document.getElementById('redeemPoints');
+    if (!pointsInput) {
+        console.error('Redeem points input not found');
+        return;
+    }
+    
     const points = parseInt(pointsInput.value);
     
     if (!points || points <= 0) {
@@ -104,21 +174,27 @@ function redeemPoints() {
             points_to_redeem: points
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => { throw err; });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             showResult('redeemResult', 
                 `✅ ${data.message}\nPoints Redeemed: ${data.points_redeemed}\nCash Value: $${data.cash_value}\nRemaining Points: ${data.remaining_points}`,
                 'success'
             );
-            document.getElementById('userPoints').textContent = data.remaining_points;
-            pointsInput.value = '';
+            safeSetTextContent('userPoints', data.remaining_points);
+            if (pointsInput) pointsInput.value = '';
         } else {
             showResult('redeemResult', `❌ ${data.error}`, 'error');
         }
     })
     .catch(error => {
-        showResult('redeemResult', 'Error connecting to server', 'error');
+        console.error('Redemption error:', error);
+        showResult('redeemResult', '❌ Error: ' + (error.message || 'Error connecting to server'), 'error');
     });
 }
 
@@ -130,20 +206,26 @@ function checkBalance() {
     }
     
     fetch(`/api/get_balance/${currentUserId}`)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw err; });
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 showResult('balanceResult', 
                     `👤 User: ${data.user_name}\n💰 Points: ${data.points}`,
                     'success'
                 );
-                document.getElementById('userPoints').textContent = data.points;
+                safeSetTextContent('userPoints', data.points);
             } else {
                 showResult('balanceResult', `❌ ${data.error}`, 'error');
             }
         })
         .catch(error => {
-            showResult('balanceResult', 'Error connecting to server', 'error');
+            console.error('Balance error:', error);
+            showResult('balanceResult', '❌ Error: ' + (error.message || 'Error connecting to server'), 'error');
         });
 }
 
@@ -155,10 +237,20 @@ function viewHistory() {
     }
     
     fetch(`/api/get_history/${currentUserId}`)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw err; });
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 const historyList = document.getElementById('historyList');
+                if (!historyList) {
+                    console.error('History list element not found');
+                    return;
+                }
+                
                 historyList.innerHTML = '';
                 
                 if (data.history.length === 0) {
@@ -184,23 +276,35 @@ function viewHistory() {
                     });
                 }
                 showResult('historyResult', '', 'info');
-                document.getElementById('historyResult').classList.add('show');
+                const historyResult = document.getElementById('historyResult');
+                if (historyResult) historyResult.classList.add('show');
             } else {
                 showResult('historyResult', `❌ ${data.error}`, 'error');
             }
         })
         .catch(error => {
-            showResult('historyResult', 'Error connecting to server', 'error');
+            console.error('History error:', error);
+            showResult('historyResult', '❌ Error: ' + (error.message || 'Error connecting to server'), 'error');
         });
 }
 
 // View all users
 function viewAllUsers() {
     fetch('/api/get_all_users')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw err; });
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 const allUsersList = document.getElementById('allUsersList');
+                if (!allUsersList) {
+                    console.error('All users list element not found');
+                    return;
+                }
+                
                 allUsersList.innerHTML = '';
                 
                 if (data.users.length === 0) {
@@ -217,19 +321,14 @@ function viewAllUsers() {
                     });
                 }
                 showResult('allUsersResult', '', 'info');
-                document.getElementById('allUsersResult').classList.add('show');
+                const allUsersResult = document.getElementById('allUsersResult');
+                if (allUsersResult) allUsersResult.classList.add('show');
             } else {
                 showResult('allUsersResult', `❌ ${data.error}`, 'error');
             }
         })
         .catch(error => {
-            showResult('allUsersResult', 'Error connecting to server', 'error');
+            console.error('All users error:', error);
+            showResult('allUsersResult', '❌ Error: ' + (error.message || 'Error connecting to server'), 'error');
         });
-}
-
-// Helper function to show results
-function showResult(elementId, message, type) {
-    const element = document.getElementById(elementId);
-    element.textContent = message;
-    element.className = 'result show ' + type;
 }
