@@ -1,4 +1,4 @@
-// script.js - Complete JavaScript logic with safe element handling
+// script.js - Complete JavaScript logic
 let currentUserId = null;
 
 // Helper function to safely set text content
@@ -23,23 +23,6 @@ function showResult(elementId, message, type) {
     } else {
         console.warn(`Result element with id '${elementId}' not found`);
         return false;
-    }
-}
-
-// Helper function for fetch with error handling
-async function fetchWithErrorHandling(url, options = {}) {
-    try {
-        const response = await fetch(url, options);
-        
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Request failed');
-        }
-        
-        return await response.json();
-    } catch (error) {
-        console.error('Fetch error:', error);
-        throw error;
     }
 }
 
@@ -236,6 +219,18 @@ function viewHistory() {
         return;
     }
     
+    // Mostrar loading
+    const historyResult = document.getElementById('historyResult');
+    const historyList = document.getElementById('historyList');
+    
+    if (historyResult) {
+        historyResult.className = 'result show info';
+        historyResult.textContent = '⏳ Cargando historial...';
+    }
+    if (historyList) {
+        historyList.innerHTML = '';
+    }
+    
     fetch(`/api/get_history/${currentUserId}`)
         .then(response => {
             if (!response.ok) {
@@ -244,52 +239,97 @@ function viewHistory() {
             return response.json();
         })
         .then(data => {
+            const historyList = document.getElementById('historyList');
+            if (!historyList) {
+                console.error('History list element not found');
+                return;
+            }
+            
+            // Limpiar el contenido anterior
+            historyList.innerHTML = '';
+            
             if (data.success) {
-                const historyList = document.getElementById('historyList');
-                if (!historyList) {
-                    console.error('History list element not found');
-                    return;
-                }
-                
-                historyList.innerHTML = '';
-                
                 if (data.history.length === 0) {
-                    historyList.innerHTML = '<p>No purchases or redemptions yet</p>';
+                    historyList.innerHTML = '<p style="padding:10px;color:#666;text-align:center;">📭 No hay compras o canjes registrados aún</p>';
+                    // Mostrar mensaje de éxito pero sin texto adicional
+                    const historyResult = document.getElementById('historyResult');
+                    if (historyResult) {
+                        historyResult.className = 'result show success';
+                        historyResult.textContent = '✅ Historial cargado correctamente';
+                        setTimeout(() => {
+                            if (historyResult) {
+                                historyResult.className = 'result show info';
+                                historyResult.textContent = '';
+                            }
+                        }, 2000);
+                    }
                 } else {
+                    // Construir la lista de historial
                     data.history.forEach(item => {
                         const div = document.createElement('div');
                         div.className = 'history-item';
                         if (item.type === 'PURCHASE') {
                             div.innerHTML = `
-                                <strong>🛒 Purchase</strong><br>
-                                Amount: $${item.amount} | Points Earned: ${item.points_earned}<br>
-                                Date: ${new Date(item.date).toLocaleString()}
+                                <strong>🛒 Compra</strong><br>
+                                Monto: $${item.amount} | Puntos Ganados: ${item.points_earned}<br>
+                                <small>📅 ${new Date(item.date).toLocaleString()}</small>
                             `;
                         } else {
                             div.innerHTML = `
-                                <strong>🎯 Redemption</strong><br>
-                                Points Redeemed: ${item.points_redeemed} | Cash Value: $${item.cash_value}<br>
-                                Date: ${new Date(item.date).toLocaleString()}
+                                <strong>🎯 Canje</strong><br>
+                                Puntos Canjeados: ${item.points_redeemed} | Valor: $${item.cash_value}<br>
+                                <small>📅 ${new Date(item.date).toLocaleString()}</small>
                             `;
                         }
                         historyList.appendChild(div);
                     });
+                    
+                    // Mostrar mensaje de éxito
+                    const historyResult = document.getElementById('historyResult');
+                    if (historyResult) {
+                        historyResult.className = 'result show success';
+                        historyResult.textContent = `✅ ${data.history.length} movimientos encontrados`;
+                        setTimeout(() => {
+                            if (historyResult) {
+                                historyResult.className = 'result show info';
+                                historyResult.textContent = '';
+                            }
+                        }, 2000);
+                    }
                 }
-                showResult('historyResult', '', 'info');
-                const historyResult = document.getElementById('historyResult');
-                if (historyResult) historyResult.classList.add('show');
             } else {
-                showResult('historyResult', `❌ ${data.error}`, 'error');
+                // Error en la respuesta
+                const historyResult = document.getElementById('historyResult');
+                if (historyResult) {
+                    historyResult.className = 'result show error';
+                    historyResult.textContent = `❌ ${data.error}`;
+                }
             }
         })
         .catch(error => {
             console.error('History error:', error);
-            showResult('historyResult', '❌ Error: ' + (error.message || 'Error connecting to server'), 'error');
+            const historyResult = document.getElementById('historyResult');
+            if (historyResult) {
+                historyResult.className = 'result show error';
+                historyResult.textContent = '❌ Error: ' + (error.message || 'Error connecting to server');
+            }
         });
 }
 
 // View all users
 function viewAllUsers() {
+    // Mostrar loading
+    const allUsersResult = document.getElementById('allUsersResult');
+    const allUsersList = document.getElementById('allUsersList');
+    
+    if (allUsersResult) {
+        allUsersResult.className = 'result show info';
+        allUsersResult.textContent = '⏳ Cargando usuarios...';
+    }
+    if (allUsersList) {
+        allUsersList.innerHTML = '';
+    }
+    
     fetch('/api/get_all_users')
         .then(response => {
             if (!response.ok) {
@@ -298,37 +338,69 @@ function viewAllUsers() {
             return response.json();
         })
         .then(data => {
+            const allUsersList = document.getElementById('allUsersList');
+            if (!allUsersList) {
+                console.error('All users list element not found');
+                return;
+            }
+            
+            // Limpiar el contenido anterior
+            allUsersList.innerHTML = '';
+            
             if (data.success) {
-                const allUsersList = document.getElementById('allUsersList');
-                if (!allUsersList) {
-                    console.error('All users list element not found');
-                    return;
-                }
-                
-                allUsersList.innerHTML = '';
-                
                 if (data.users.length === 0) {
-                    allUsersList.innerHTML = '<p>No users found</p>';
+                    allUsersList.innerHTML = '<p style="padding:10px;color:#666;text-align:center;">📭 No hay usuarios registrados</p>';
+                    const allUsersResult = document.getElementById('allUsersResult');
+                    if (allUsersResult) {
+                        allUsersResult.className = 'result show success';
+                        allUsersResult.textContent = '✅ Usuarios cargados correctamente';
+                        setTimeout(() => {
+                            if (allUsersResult) {
+                                allUsersResult.className = 'result show info';
+                                allUsersResult.textContent = '';
+                            }
+                        }, 2000);
+                    }
                 } else {
+                    // Construir la lista de usuarios
                     data.users.forEach(user => {
                         const div = document.createElement('div');
                         div.className = 'user-item';
                         div.innerHTML = `
-                            <span class="user-name">${user.name}</span>
-                            <span class="user-points">${user.points} points</span>
+                            <span class="user-name">👤 ${user.name}</span>
+                            <span class="user-points">⭐ ${user.points} puntos</span>
                         `;
                         allUsersList.appendChild(div);
                     });
+                    
+                    // Mostrar mensaje de éxito
+                    const allUsersResult = document.getElementById('allUsersResult');
+                    if (allUsersResult) {
+                        allUsersResult.className = 'result show success';
+                        allUsersResult.textContent = `✅ ${data.users.length} usuarios encontrados`;
+                        setTimeout(() => {
+                            if (allUsersResult) {
+                                allUsersResult.className = 'result show info';
+                                allUsersResult.textContent = '';
+                            }
+                        }, 2000);
+                    }
                 }
-                showResult('allUsersResult', '', 'info');
-                const allUsersResult = document.getElementById('allUsersResult');
-                if (allUsersResult) allUsersResult.classList.add('show');
             } else {
-                showResult('allUsersResult', `❌ ${data.error}`, 'error');
+                // Error en la respuesta
+                const allUsersResult = document.getElementById('allUsersResult');
+                if (allUsersResult) {
+                    allUsersResult.className = 'result show error';
+                    allUsersResult.textContent = `❌ ${data.error}`;
+                }
             }
         })
         .catch(error => {
             console.error('All users error:', error);
-            showResult('allUsersResult', '❌ Error: ' + (error.message || 'Error connecting to server'), 'error');
+            const allUsersResult = document.getElementById('allUsersResult');
+            if (allUsersResult) {
+                allUsersResult.className = 'result show error';
+                allUsersResult.textContent = '❌ Error: ' + (error.message || 'Error connecting to server');
+            }
         });
 }
