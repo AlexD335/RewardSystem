@@ -238,5 +238,51 @@ def redeem_points():
             'error': f'Internal server error: {str(e)}'
         }), 500
 
+@app.route('/api/get_history/<user_id>', methods=['GET'])
+def get_history(user_id):
+    """Get user's purchase history"""
+    try:
+        # Validate user exists
+        if user_id not in users:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
+        return jsonify({
+            'success': True,
+            'user_id': user_id,
+            'user_name': users[user_id]['name'],
+            'history': purchase_history.get(user_id, [])
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Internal server error: {str(e)}'
+        }), 500
+
+@app.route('/api/get_all_users', methods=['GET'])
+def get_all_users():
+    """Get all users with their points"""
+    try:
+        user_list = []
+        for user_id, user_data in users.items():
+            user_list.append({
+                'id': user_id,
+                'name': user_data['name'],
+                'points': user_data['points']
+            })
+        return jsonify({
+            'success': True,
+            'users': user_list
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Internal server error: {str(e)}'
+        }), 500
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
