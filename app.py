@@ -132,5 +132,29 @@ def register_purchase():
             'error': f'Internal server error: {str(e)}'
         }), 500
 
+@app.route('/api/get_balance/<user_id>', methods=['GET'])
+def get_balance(user_id):
+    """Get user's points balance"""
+    try:
+        # Validate user exists
+        if user_id not in users:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
+        return jsonify({
+            'success': True,
+            'user_id': user_id,
+            'user_name': users[user_id]['name'],
+            'points': users[user_id]['points']
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Internal server error: {str(e)}'
+        }), 500
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
