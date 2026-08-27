@@ -156,5 +156,87 @@ def get_balance(user_id):
             'error': f'Internal server error: {str(e)}'
         }), 500
 
+@app.route('/api/redeem_points', methods=['POST'])
+def redeem_points():
+    """Redeem points for cash value"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        points_to_redeem = data.get('points_to_redeem')
+        
+        # Validate required fields
+        if not user_id:
+            return jsonify({
+                'success': False,
+                'error': 'User ID is required'
+            }), 400
+        
+        if points_to_redeem is None:
+            return jsonify({
+                'success': False,
+                'error': 'Points to redeem is required'
+            }), 400
+        
+        # Validate user exists
+        if user_id not in users:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
+        # Validate points
+        try:
+            points_to_redeem = int(points_to_redeem)
+        except (ValueError, TypeError):
+            return jsonify({
+                'success': False,
+                'error': 'Invalid points. Must be an integer'
+            }), 400
+        
+        if points_to_redeem <= 0:
+            return jsonify({
+                'success': False,
+                'error': 'Points to redeem must be greater than 0'
+            }), 400
+        
+        # Check if user has enough points
+        if users[user_id]['points'] < points_to_redeem:
+            return jsonify({
+                'success': False,
+                'error': f'Insufficient points. You have {users[user_id]["points"]} points'
+            }), 400
+        
+        # Calculate cash value: 1 point = 100 pesos
+        cash_value = points_to_redeem * REDEMPTION_VALUE_PER_POINT
+        
+        # Deduct points
+        users[user_id]['points'] -= points_to_redeem
+        
+        # Register redemption in history
+        redemption = {
+            'purchase_id': str(int(datetime.now().timestamp() * 1000)),
+            'points_redeemed': points_to_redeem,
+            'cash_value': cash_value,
+            'date': datetime.now().isoformat(),
+            'type': 'REDEMPTION'
+        }
+        purchase_history[user_id].append(redemption)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Points redeemed successfully',
+            'user_id': user_id,
+            'user_name': users[user_id]['name'],
+            'points_redeemed': points_to_redeem,
+            'cash_value': cash_value,
+            'remaining_points': users[user_id]['points']
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Internal server error: {str(e)}'
+        }), 500
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
